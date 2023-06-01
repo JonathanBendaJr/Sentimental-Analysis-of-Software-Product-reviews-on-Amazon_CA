@@ -1,0 +1,295 @@
+---
+title: Understanding Customer Sentiments of Reviews from Software Products on Amazon
+  Ecommerce.
+author: 'Jonathan SD Benda Jr - C00290862'
+
+date: "Submission Date: 2023-01-04"
+
+<div style="page-break-before: always;"></div>
+
+output:
+  html_document:
+    number_sections: true
+    toc: true
+    toc_depth: 2
+bibliography: citation.bib
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Product evaluations, also known as reviews or ratings, are a common way for consumers to learn about the quality and performance of a product before making a purchase. These evaluations can be found online, in print, or through word-of-mouth recommendations from friends and family. However, it is important for consumers to be aware that not all product evaluations are genuine and some may be fabricated or fake.
+Businesses or individuals may fabricate positive evaluations in order to promote their product or service and increase sales. By creating fake positive reviews, they can improve their reputation and make their product or business more appealing to potential customers. On the other hand, they may also fabricate negative evaluations for their rivals' products in an attempt to harm their reputation and steal customers away. @RN26
+It is important for consumers to be aware of the potential for fake evaluations and to consider the source when reading product reviews. It can be helpful to read evaluations from a variety of sources and to be cautious of reviews that seem overly positive or negative. It is also a good idea to do additional research and consider other factors, such as the reputation of the company and the quality of their products or services, before making a purchase. @RN30
+Sometimes, false reviews are created with the intention of misleading or deceiving customers. This can be done for personal gain, or to harm a company or individual. These fake reviews may be made up entirely or may be based on incomplete or misleading information. They can be published by individuals or organizations with a specific purpose in mind, such as trying to shape public opinion on a particular topic related to electronic items. @RN26
+Consumers often use reviews to help them make decisions about which products and services to purchase. Online marketplaces like Amazon have become an important part of our lives, and consumers rely on these platforms to find and purchase products. However, fake reviews can undermine the credibility of these ratings and have negative consequences for both customers and companies. Fake reviews can mislead customers about the quality of a product, leading them to make poor purchasing decisions. @RN21
+This research will cover sentimental analysis of reviews from customers who did verified purchased of software as well as customers who do not purchase at all to get insight on these reviews.
+
+
+
+# Research Question/s / Problems
+
+  1.	What are the most common factors that influence the sentiment of software product reviews on Amazon?
+  2.	How does the sentiment of software product reviews on Amazon vary across different product categories?
+  3.	Is there a relationship between the overall rating of a software product and the sentiment expressed in its reviews on Amazon?
+  5.	How has the sentiment of software product reviews on Amazon changed over time?
+
+
+
+# Rationale
+
+On Amazon, fake reviews of software products can be misleading to customers and influence their purchasing decisions. However, it is not clear which characteristics, compared to human expert opinions, are most important for a machine learning system to accurately identify false reviews. This report acknowledges the harm that false reviews can cause to customers and businesses, as well as the need for a system to identify and stop them. It also admits the lack of certainty about a machine learning algorithm's ability to detect fake reviews based only on their language and their effectiveness and interpretability. @RN33
+This study aims to evaluate the accuracy and understandability of a model for detecting false reviews of electronics on Amazon using a machine learning algorithm. The goal of this study is to improve the model and identify potential areas for development by providing insights into the characteristics and trends of fake reviews. By evaluating the model's performance, the study can also help identify the important characteristics of fake reviews that human experts can identify, as well as how these traits relate to the characteristics used by the machine learning system to make predictions. This can provide insights into the model's inner workings and how it is identifying false reviews. @RN26
+
+
+# Data Presentation
+This study will focus on the implementation of sentimental analysis to interpret and answer the above questions of product reviews on Amazon with the following steps in detail:
+•	Collect a dataset of software product reviews: In order to conduct a reliable analysis for detecting fake sentiments in product reviews, it is necessary to collect a dataset of reviews that includes both real and fake reviews. This dataset will be used to train a machine learning model to accurately classify the sentiments in reviews as either fake or real. @RN26 
+
+•	Pre-process the data: Pre-processing data is an important step in preparing data for analysis and training machine learning models. Pre-processing helps to remove noise and make the data more suitable for training, which can improve the accuracy and effectiveness of the model. In the context of analyzing sentiment in product reviews, pre-processing the data may involve a range of steps, such as converting columns to the right format, storing the review text as a character type in order to generate sentiment scores, and removing unnecessary or irrelevant details. @RN34
+ 
+Overall, pre-processing the data is an important step for effective analysis of sentiment in product reviews. It is worth taking the time to carefully consider which pre-processing steps are most appropriate for your specific dataset and problem, as this can have a significant impact on the accuracy and effectiveness of the model. @RN26 
+
+# Data Manipulation 
+
+
+## Import Libraries.
+```{r}
+
+library(syuzhet)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
+
+
+## Import dataset.
+The data was downloaded from @RN40 and pre-process to CSV format for manipulation.
+
+Link to Data on my onedrive: https://instituteoftechnol663-my.sharepoint.com/:x:/g/personal/c00290862_itcarlow_ie/EW-h1ADty_NKupyLrIz5BakBJNl6N8sCGxAov7LBC6I-tw?e=gcc2ln 
+```{r}
+soft_reviews_data <- read.csv("software_reviews.csv", stringsAsFactors = FALSE)
+```
+
+
+## Select Columns to be used in Analysis from dataset.
+```{r}
+selected_columns <- soft_reviews_data %>% 
+  select(verified, reviewTime,style, reviewText)
+```
+
+```{r}
+head(selected_columns)
+```
+
+
+## Convert the Date format and column.
+```{r}
+selected_columns$reviewTime <- as.Date(selected_columns$reviewTime, format = "%m %d, %Y")
+```
+
+## Add Row Number to the data set.
+```{r}
+new_review_data <- selected_columns %>% 
+  mutate(row_number = row_number())
+```
+
+
+## Restored data in character format.
+```{r}
+reviews <- as.character(new_review_data$reviewText)
+```
+
+
+## obtain the sentiment scores.
+```{r}
+sentiment_scores <- get_nrc_sentiment(reviews)
+```
+```{r}
+head(sentiment_scores)
+```
+
+```{r}
+sentiment_columns <- sentiment_scores %>% 
+  select(anger,anticipation,joy,sadness,negative,positive)
+```
+
+```{r}
+head(sentiment_columns)
+```
+
+
+## Add the selected_columns dataframe to the sentiment_scores.
+```{r}
+reviews_sentiment <- cbind(selected_columns,sentiment_scores)
+```
+
+
+## A Barplot showing showing the overview of the level sentiment in a phrase of the software products review.
+```{r}
+barplot(colSums(sentiment_columns), col = rainbow(6), ylab = 'count', main = 'Amazon Software Product Review Feedback') 
+legend('right', legend=c("Anger", "Anticipation", "Joy", "Sadness","Negative", "Positive"), fill=rainbow(6))
+```
+
+```{r}
+anger_count <- subset(sentiment_columns, anger>0)
+anticipate_count <- subset(sentiment_columns, anticipation>0)
+joy_count <- subset(sentiment_columns, joy>0)
+sad_count <- subset(sentiment_columns, sadness>0)
+negative_count <- subset(sentiment_columns, negative>0)
+
+positive_count <- subset(sentiment_columns, positive>0)
+
+
+```
+
+```{r}
+anger_row_count <- nrow(anger_count)
+anticipate_row_count <- nrow(anticipate_count)
+joy_row_count <- nrow(joy_count)
+sad_row_count<- nrow(sad_count) 
+negative_row_count<- nrow(negative_count)
+positive_row_count <- nrow(positive_count)
+
+
+sentimet_obs_count <- cbind(anger_row_count,anticipate_row_count,joy_row_count,sad_row_count,negative_row_count,positive_row_count)
+```
+
+
+## A Barplot showing coparing two related or directly oposing (Negative & Positive) sentiment phrases of the software products review.
+```{r}
+new_sentimet_obs_count <- c(negative_row_count,positive_row_count)
+barplot(new_sentimet_obs_count, col = rainbow(4), ylab = 'count', xlab='Sentiment phrase', main = 'Negative VS Positive Sentiments', las = 1)
+legend('topright', legend=c("Negative Phrase", "Positive Phrase"), fill=rainbow(4))
+```
+
+## A Barplot showing coparing two related or directly oposing (Sadness & Joy) sentiment phrases of the software products review.
+```{r}
+sad_joy <- c(sad_row_count,joy_row_count)
+barplot(sad_joy, col = rainbow(6), ylab = 'count', xlab='Sentiment phrase', main = 'Sad VS Joyful Sentiments', las = 1)
+legend('topright', legend=c("Sad Phrase", "Joyful Phrase"), fill=rainbow(6))
+```
+
+## A Barplot showing coparing two related or directly oposing (Anger & Anticapating) sentiment phrases of the software products review.
+```{r}
+anger_anticipate <- c(anger_row_count,anticipate_row_count)
+barplot(anger_anticipate, col = rainbow(2), ylab = 'count', xlab='Sentiment phrase', main = 'Anger VS Anticipating Sentiments', las = 1)
+legend('topright', legend=c("Anger Phrase", "Anticipating Phrase"), fill=rainbow(2))
+```
+
+
+
+## Geting Specific Style of the Software packaging.
+
+```{r}
+indices <- which(grepl("DVD-ROM", reviews_sentiment$style))
+dvd_packaging <- reviews_sentiment[indices, ]
+```
+
+
+## Analyzing the review of verified purchased of software in the packaging style of DVD-ROM.
+```{r}
+verified_buyer <- dvd_packaging %>%
+  filter(verified == "True")
+```
+
+```{r}
+verified_buyer_plot <- verified_buyer %>%
+    select(anger,anticipation,joy,sadness,negative,positive)
+```
+
+## A Barplot showing the difference in the Sentiment score of reviewers who has verified purchase the software products and review.
+```{r}
+verified_purchased_review_barplot<- barplot(colSums(verified_buyer_plot), col = rainbow(6), ylab = 'count', main = 'Review Feedback From Verified Purchased') 
+legend('topright', legend=c("Anger", "Anticipating", "Joy", "Sadness", "Negative", "Positive"), fill=rainbow(6))
+verified_purchased_review_barplot
+```
+
+
+
+## The Plot below depicts  sentiments of reviewers who has verified purchase the software products and review.
+```{r}
+ggplot(verified_buyer_plot, aes(negative,positive ))+ geom_point(aes(size= negative, colour = positive))+ geom_smooth(se=FALSE)
+```
+
+
+
+
+## Analyzing the review of Not verified purchased of software in the packaging style of DVD-ROM. 
+```{r}
+not_verified_buyer <- dvd_packaging %>%
+  filter(verified == "False")
+```
+
+```{r}
+not_verified_buyer_plot <- not_verified_buyer %>%
+  select(anger,anticipation,joy,sadness,negative,positive)
+```
+
+```{r}
+class(not_verified_buyer_plot)
+```
+
+## *** A Barplot showing the difference in the Sentiment score of reviewers who did not purchase the software products but review.
+```{r}
+barplot(colSums(not_verified_buyer_plot), col = rainbow(6), ylab = 'count', main = 'Review Feedback From non-Verified Purchased')
+legend('topright', legend=c("Anger", "Anticipating", "Joy", "Sadness", "Negative", "Positive"), fill=rainbow(6))
+```
+
+
+
+## *** The Plot below depicts the bais sentiments of reviewers who did not purchase the software products but review.
+```{r}
+non_verified_plot<- ggplot(not_verified_buyer_plot, aes(negative,positive ))+ geom_point(aes(size= negative, colour = positive))+ geom_smooth(se=FALSE)
+non_verified_plot
+```
+
+
+
+
+# Research Questions and Answers
+
+## 1. What are the most common factors that influence the sentiment of software product reviews on Amazon?
+There are several factors that could lead to sentimental or bias reviews which are:
+1. Different people have different expectations and needs when it comes to software, and this can influence the sentiment of their reviews. 
+2. If a user has had a positive experience with similar software products in the past, they may be more likely to give a positive review to a new product in the same category. 
+
+
+## 2.	How does the sentiment of software product reviews on Amazon vary across different product categories?
+Reviews for software products in a highly competitive category may be more negative than reviews for software products in a less competitive category. Additionally, the characteristics of the customers who are writing the reviews may also vary across product categories, which could influence the sentiment of the reviews.
+
+
+## 3.Is there a relationship between the overall rating of a software product and the sentiment expressed in its reviews on Amazon?
+In general, products that have a high overall rating may have more positive reviews, while products with a lower overall rating may have more negative reviews. This is because overall ratings are typically based on the average of the individual ratings that have been given by customers. If a product has a large number of positive ratings, it is likely to have a high overall rating, which may be reflected in the sentiment of its reviews. 
+
+
+## 4. How has the sentiment of software product reviews on Amazon changed over time?
+The sentiment of reviews has changed over time for a variety of reasons, including changes in the quality or performance of the product, changes in the level of customer support provided by the manufacturer or seller, or changes in the overall user experience. Additionally, the sentiment of reviews could be influenced by external factors, such as the level of competition in a particular product category or changes in consumer sentiment more broadly. 
+
+
+# Conclusions 
+
+There are several factors that can lead to biased or sentimental reviews for software products on Amazon. These include the user's personal preferences, their previous experience with similar products, and the level of competition in the product's category. Additionally, the overall rating of a product may be related to the sentiment of its reviews, with products that have a high overall rating tending to have more positive reviews and products with a low overall rating tending to have more negative reviews. 
+
+Based on the analysis conducted above, some recommendations for companies or individuals who sell software products on Amazon could include:
+
+  1.Consider the needs and preferences of your target audience: Understanding the expectations and needs of your target audience can help       you tailor your product and marketing efforts to better meet their needs. 
+
+  2.Offer high-quality products and excellent customer support: Providing high-quality products and excellent customer support can help to      improve the sentiment of reviews for your product.
+
+  3.Monitor and respond to customer reviews: Regularly monitoring and responding to customer reviews can help you identify any issues with      your product or customer service and take steps to address them. 
+
+ 
+
+# References
+
+
+
+
+
+
+
